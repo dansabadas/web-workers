@@ -1,0 +1,148 @@
+<html>
+    <body>
+        <h1>Hello web workers</h1>
+        <script>
+            // let worker = new Worker('worker.js');
+            // worker.postMessage('hello');
+
+            // worker.addEventListener('message', function(e){
+            //     console.log('from worker received: ' +  e.data);
+            // });
+
+            // let ab = new ArrayBuffer(32);
+            // let worker1 = new Worker('worker.js');
+            // worker1.postMessage(ab);
+            // console.log(ab.byteLength);
+
+            // worker1.postMessage(ab, [ab]);
+            // console.log(ab.byteLength);
+
+            // let worker = new Worker('worker1.js');
+            // let msg = {
+            //     string: 'foo',
+            //     num: 1,
+            //     bool: true,
+            //     arr: [1,2,3],
+            //     //func: function(){console.log('hello');}
+            // };  
+            // worker.postMessage(msg);  
+            // msg.string = 'bar';   
+
+            //let worker2 = new Worker('worker2.js');
+
+            // let worker3 = new Worker('worker3-dedicated-lifecycle.js');
+            // worker3.postMessage('foo'); 
+            // //worker3.terminate();  // finish a worker from outside
+            // worker3.postMessage(`this won't work`); 
+
+            // let worker4 = new SharedWorker('worker4-shared-lifecycle.js');
+            // //worker4.port.postMessage('hello shared');
+            // worker4.port.start();
+            // worker4.port.addEventListener('message', function(e){
+            //     console.log(e.data);
+            // });
+
+            // let worker5 = new Worker('message-formats.js');
+            // worker5.addEventListener('message', function(e){
+            //     console.log(e.data);
+            // });
+            // worker5.postMessage({
+            //     type: 'add',
+            //     args: [3,5]
+            // });
+            // worker5.postMessage({
+            //     type: 'substract',
+            //     args: [13,5]
+            // });
+
+            // let 
+            //     worker6 = new Worker('rpc.js'),
+            //     nextCorrelationId = 1,
+            //     callbacks = {};
+
+            // worker6.addEventListener('message', function(e){
+            //     if(callbacks[e.data.correlationId]){
+            //         callbacks[e.data.correlationId](e.data.result);
+            //         delete callbacks[e.data.correlationId];
+            //     }
+            // });
+
+            // let msg = {
+            //     type: 'add',
+            //     args: [3,5],
+            //     correlationId: nextCorrelationId++
+            // };
+
+            // callbacks[msg.correlationId] = (function(message){
+            //     return function(result){
+            //         console.log('result of handling parameters', message.args, message.correlationId, result);
+            //     }
+            // })(msg);//the IIFE allows the callback closure to fire in the context of the original message
+            // worker6.postMessage(msg);
+            
+            // msg = {
+            //     type: 'substract',
+            //     args: [8,5],
+            //     correlationId: nextCorrelationId++
+            // };
+
+            // callbacks[msg.correlationId] = (function(message){
+            //     return function(result){
+            //         console.log('result handling parameters', message.args, message.correlationId, result);
+            //     }
+            // })(msg);
+            // worker6.postMessage(msg);
+
+            let 
+                worker7 = new Worker('worker7-error-handler.js'),
+                nextCorrelationId = 1,
+                callbacks = {};
+            
+            worker7.addEventListener('message', function(e){
+                if(callbacks[e.data.correlationId]){
+                    callbacks[e.data.correlationId](e.data.result);
+                    delete callbacks[e.data.correlationId];
+                }
+            });
+
+            worker7.addEventListener('error', function(e){
+                console.log(e);
+            });
+
+            let msg = {
+                type: 'add',
+                args: [3],  // just one argument instead of the expected 2 => crash
+                correlationId: nextCorrelationId++
+            };
+
+            callbacks[msg.correlationId] = (function(message){
+                return function(result){
+                    if(result.isError){
+                        console.log('error occured ', result.value);
+                    } else {
+                        console.log('result of handling parameters', message.args, message.correlationId, result);
+                    }
+                }
+            })(msg);
+            worker7.postMessage(msg);
+
+            msg = {
+                type: 'substract',
+                args: [8, 3], 
+                correlationId: nextCorrelationId++
+            };
+
+            callbacks[msg.correlationId] = (function(message){
+                return function(result){
+                    if(result.isError){
+                        console.log('error occured ', result.value);
+                    } else {
+                        console.log('result of handling parameters', message.args, message.correlationId, result);
+                    }
+                }
+            })(msg);
+            worker7.postMessage(msg);
+
+        </script>
+    </body>
+</html>
