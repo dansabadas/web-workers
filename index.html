@@ -93,21 +93,102 @@
             // })(msg);
             // worker6.postMessage(msg);
 
-            let 
-                worker7 = new Worker('worker7-error-handler.js'),
-                nextCorrelationId = 1,
-                callbacks = {};
+            // let 
+            //     worker7 = new Worker('worker7-error-handler.js'),
+            //     nextCorrelationId = 1,
+            //     callbacks = {}; 
             
-            worker7.addEventListener('message', function(e){
+            // worker7.addEventListener('message', function(e){
+            //     if(callbacks[e.data.correlationId]){
+            //         callbacks[e.data.correlationId](e.data.result);
+            //         delete callbacks[e.data.correlationId];
+            //     }
+            // });
+
+            // worker7.addEventListener('error', function(e){
+            //     console.log(e);
+            // });
+
+            // let msg = {
+            //     type: 'add',
+            //     args: [3],  // just one argument instead of the expected 2 => crash
+            //     correlationId: nextCorrelationId++
+            // };
+
+            // callbacks[msg.correlationId] = (function(message){
+            //     return function(result){
+            //         if(result.isError){
+            //             console.log('error occured ', result.value);
+            //         } else {
+            //             console.log('result of handling parameters', message.args, message.correlationId, result);
+            //         }
+            //     }
+            // })(msg);
+            // worker7.postMessage(msg);
+
+            // msg = {
+            //     type: 'substract',
+            //     args: [8, 3], 
+            //     correlationId: nextCorrelationId++
+            // };
+
+            // callbacks[msg.correlationId] = (function(message){
+            //     return function(result){
+            //         if(result.isError){
+            //             console.log('error occured ', result.value);
+            //         } else {
+            //             console.log('result of handling parameters', message.args, message.correlationId, result);
+            //         }
+            //     }
+            // })(msg);
+            // worker7.postMessage(msg);
+
+            function add(l,r){
+                if(!parseFloat(l) || !parseFloat(r))
+                {
+                    throw 'Must have 2 numeric inputs!';
+                }
+
+                return l+r;
+            }
+
+            function substract(l,r){
+                return l-r;
+            }
+
+            let 
+                worker8 = new Worker('worker8-function-copying.js'),
+                nextCorrelationId = 1,
+                callbacks = {}; 
+            
+            worker8.addEventListener('message', function(e){
                 if(callbacks[e.data.correlationId]){
                     callbacks[e.data.correlationId](e.data.result);
                     delete callbacks[e.data.correlationId];
                 }
             });
 
-            worker7.addEventListener('error', function(e){
-                console.log(e);
+            worker8.addEventListener('error', function(e){
+                console.log('Error occured ', e);   // better apprach wrapping error as below
             });
+
+            let regExp = /\((.*)\).*\{([\s\S]*)\}/m,
+				addParts = regExp.exec(add.toString()),
+				substractParts = regExp.exec(substract.toString());
+
+			worker8.postMessage({
+				type: 'registerFunction',
+				name: 'add',
+				parameters: addParts[1],
+				body: addParts[2]
+			});
+
+			worker8.postMessage({
+				type: 'registerFunction',
+				name: 'substract',
+				parameters: substractParts[1],
+				body: substractParts[2]
+			});
 
             let msg = {
                 type: 'add',
@@ -124,11 +205,11 @@
                     }
                 }
             })(msg);
-            worker7.postMessage(msg);
+            worker8.postMessage(msg);
 
             msg = {
                 type: 'substract',
-                args: [8, 3], 
+                args: [8, 3],  // just one argument instead of the expected 2 => crash
                 correlationId: nextCorrelationId++
             };
 
@@ -141,8 +222,7 @@
                     }
                 }
             })(msg);
-            worker7.postMessage(msg);
-
+            worker8.postMessage(msg);
         </script>
     </body>
 </html>
